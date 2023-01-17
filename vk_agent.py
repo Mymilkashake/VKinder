@@ -1,6 +1,5 @@
 import random
 from datetime import date
-from pprint import pprint
 import requests
 import data_base
 
@@ -20,15 +19,11 @@ class VkAgent:
         }
 
     def get_response(self, method, params):
-        return requests.get(f"{self.base_url}{method}", params={**params, **self.params}).json()
-
-    # @staticmethod
-    # def get_response(url, params):
-    #     response = requests.get(url, params=params)
-    #     if response.status_code == 200:
-    #         return response.json()
-    #     else:
-    #         return False
+        response = requests.get(f"{self.base_url}{method}", params={**params, **self.params})
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return False
 
     @staticmethod
     def get_link(response, photo_index):
@@ -60,7 +55,6 @@ class VkAgent:
             'hometown': search_params[3]
         }
         response = self.get_response(method, params)
-        # pprint(response_find_user)
         if response:
             for item in response['response']['items']:
                 if not item['is_closed']:
@@ -112,10 +106,8 @@ class VkAgent:
                 'rev': '1'
             }
             response = self.get_response(method, params)
-            # pprint(response)
             if response:
                 count_photo = len(response['response']['items'])
-                # owner_id = response['response']['items'][0]['owner_id']
                 if count_photo >= 3:  # если больше 3 фото, то самые популярные выбираем как сумма лайков и комментов
                     photo_dict = {}
                     for item in range(count_photo):
@@ -123,7 +115,6 @@ class VkAgent:
                         comments_count = response['response']['items'][item]['comments']['count']
                         photo_dict[likes_count + comments_count] = response['response']['items'][item]['id']
                     sorted_dict = sorted(photo_dict.items(), reverse=True)
-                    # print(sorted_dict)
                     list_of_photo_ids = []
                     for n in range(3):
                         list_of_photo_ids.append(sorted_dict[n][1])
@@ -165,7 +156,6 @@ class VkAgent:
             'fields': 'sex, bdate, city'
         }
         response = self.get_response(method, params)
-        # pprint(response)
         if response:
             search_params = []
             if response['response'][0]['sex'] == 1:
@@ -178,7 +168,6 @@ class VkAgent:
             today = date.today()
             try:
                 user_bdate = response['response'][0]['bdate'].split('.')
-                # print(user_bdate)
             except Exception:  # по умолчанию = сегодня, если возраст скрыт
                 user_bdate = today.strftime("%d.%m.%Y").split('.')
             age = today.year - int(user_bdate[2]) - (

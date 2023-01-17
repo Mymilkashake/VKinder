@@ -13,7 +13,6 @@ user_token = config.vk_user_token
 # user_token = input('Введи свой персональный токен (token) для профиля ВКонтакте: ')
 
 vk = vk_api.VkApi(token=token)
-# print(vk.method('users.get', {'user_ids': 1883626, 'fields': 'photo_50, city, verified'}))
 longpoll = VkLongPoll(vk)
 vk_upload = vk_api.VkUpload(vk)
 vk_user = VkAgent(user_token)
@@ -51,14 +50,12 @@ def main():
             if event.type == VkEventType.MESSAGE_NEW:
                 if event.to_me:
                     request = event.text.lower()
-                    # print(request)
                     if request == "привет":
                         if event.user_id in search_params_all_user:
-                            # print(event.user_id)
+                            write_msg(event.user_id, 'Привет, привет!')
                             continue
                         else:
                             search_params_all_user[event.user_id] = vk_user.get_default_params(event.user_id)
-                            # print(vk_user.get_default_params(event.user_id))
 
                         if search_params_all_user[event.user_id][0] == 0:
                             keyboard = VkKeyboard(inline=True)
@@ -83,7 +80,8 @@ def main():
                                 write_msg(event.user_id, 'Ой, кажется возникла проблема.'
                                                          'Специалисты уже работают над ее устранением.')
 
-                    elif request == 'найти партнера' or request == 'дальше' or request == 'искать':
+                    elif request == 'найти партнера' or request == 'дальше' or request == 'искать' or request == \
+                            'искать дальше':
                         photo_param = vk_user.get_photo(search_params_all_user[event.user_id], event.user_id)
                         search_result_partner_id = photo_param[0]
                         partner = vk.method("users.get", {"user_ids": search_result_partner_id})
@@ -99,10 +97,28 @@ def main():
                         set_favorite(search_result_partner_id, event.user_id)
                         keyboard = VkKeyboard(inline=True)
                         keyboard.add_button('Дальше', color=VkKeyboardColor.PRIMARY)
+                        keyboard.add_button('Показать избранное', color=VkKeyboardColor.PRIMARY)
                         write_msg(event.user_id, 'Пользователь добавлен в Избранное', keyboard)
 
-                    elif request == 'привет':
-                        write_msg(event.user_id, 'Привет, привет!')
+                    elif request == 'показать избранное':
+                        user_list = show_favorite(event.user_id)
+                        if len(user_list) < 1:
+                            keyboard = VkKeyboard(inline=True)
+                            keyboard.add_button('Искать', color=VkKeyboardColor.PRIMARY)
+                            write_msg(event.user_id,
+                                      'Список "Избранное" пуст!\nДавай поскорее найдем кого-нибудь',
+                                      keyboard)
+                        else:
+                            keyboard = VkKeyboard(inline=True)
+                            keyboard.add_button('Искать дальше', color=VkKeyboardColor.PRIMARY)
+                            write_msg(event.user_id,
+                                      'Список твоих любимчиков:', keyboard)
+                            for user in user_list:
+                                write_msg(event.user_id, f'{vk_user.get_client_name(user)} '
+                                                         f'- vk.com/id{user}')
+
+                    elif request == 'пока':
+                        write_msg(event.user_id, 'До новых встреч!')
 
                     elif request == 'параметры':
                         keyboard = VkKeyboard(inline=True)
@@ -110,8 +126,7 @@ def main():
                         keyboard.add_button('2', color=VkKeyboardColor.PRIMARY)
                         keyboard.add_button('3', color=VkKeyboardColor.PRIMARY)
                         keyboard.add_button('4', color=VkKeyboardColor.PRIMARY)
-                        keyboard.add_button('Избранное', color=VkKeyboardColor.PRIMARY)
-                        # keyboard.add_button('Помощь', color=VkKeyboardColor.PRIMARY)
+                        keyboard.add_button('Помощь', color=VkKeyboardColor.PRIMARY)
                         write_msg(event.user_id, 'Что изменим в поиске?\n1 - Пол\n2 - Семейное положение'
                                                  '\n3 - Возраст\n4 - Город\nТы можешь посмотреть список доступных'
                                                  'из Параметров команд, отравив команду "Помощь".', keyboard)
@@ -203,30 +218,12 @@ def main():
                                                     break
                                         break
 
-                                    elif request == 'избранное':
-                                        user_list = show_favorite(event.user_id)
-                                        if len(user_list) < 1:
-                                            keyboard = VkKeyboard(inline=True)
-                                            keyboard.add_button('Искать', color=VkKeyboardColor.PRIMARY)
-                                            write_msg(event.user_id,
-                                                      'Список "Избранное" пуст!\nДавай поскорее найдем кого-нибудь',
-                                                      keyboard)
-                                        else:
-                                            for user in user_list:
-                                                write_msg(event.user_id, f'{vk_user.get_client_name(user)} '
-                                                                         f'- vk.com/id{user}')
-                                        break
-                                    elif request == 'пока':
-                                        write_msg(event.user_id, 'До новых встреч!')
-                                        break
                                     elif request == 'привет':
                                         write_msg(event.user_id, 'Привет, привет! Выбирай Параметры или отправь '
                                                                  'команду "Искать"')
                                         break
                                     elif request == 'помощь' or request == 'help' or request == 'нужна помощь':
-                                        write_msg(event.user_id,
-                                                  'Команды из Параметров:\n"Искать" - искать пару.\n"Избранное" - '
-                                                  'показать список избранных пользователей')
+                                        write_msg(event.user_id, 'Отправь команду "Искать" для поиска пары.\n')
                                         break
                                     else:
                                         write_msg(event.user_id, 'Введите команду "Помощь" для просмотра списка '
